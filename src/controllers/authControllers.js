@@ -35,7 +35,7 @@ const handleError = (err) => {
 };
 //creating jwt func 
 
-const maxAge =  60;
+const maxAge = 60;
 const createToken = (id) => {
     return jwt.sign({ id }, 'amar health secret', {
         expiresIn: maxAge
@@ -49,8 +49,8 @@ module.exports.home_post = (req, res) => {
     // res.locals.user was populated by your checkUser middleware
     if (res.locals.user) {
         // Send the user object so the frontend has data to display
-        res.status(200).json({ 
-            user: res.locals.user 
+        res.status(200).json({
+            user: res.locals.user
         });
     } else {
         // If no user was found in res.locals, the checkUser middleware failed

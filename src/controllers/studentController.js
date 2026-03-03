@@ -22,16 +22,25 @@ const student_get = async (req, res) => {
     }
 }
 
-// const get_student = async (req, res) => {
-//     try {
-//         const student = await Student.find();
-//         const totalStudent = await Student.countDocuments()
+const class_update = async (req, res) => {
+    try {
+        const { id } = req.params
+        const updated = await Student.findByIdAndUpdate(id, req.body, { new: true })
+        res.json(updated)
+    } catch (err) {
+        res.status(500).json({ error: err.message })
+    }
+  }
 
-//         res.status(201).json(totalStudent)
-//     } catch (err) {
-//         console.log(err)
-//     }
+const student_delete = async (req, res) => {
+    try {
+        const { id } = req.params
+        await Student.findByIdAndDelete(id)
+        res.json({ message: "deleted sucessfully" })
+    } catch (err) {
+        console.log(err)
+        res.status(500).json({ error: err.message })
+    }
+}
 
-
-// }
-module.exports = { student_get, student_post  }
+module.exports = { student_get, student_post, student_delete , class_update }

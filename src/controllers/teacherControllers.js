@@ -30,6 +30,27 @@ exports.get_teacher = async (req, res) => {
 
 
 }
+
+exports.teacher_delete = async (req, res) => {
+    try {
+        const { id } = req.params
+        await Teacher.findByIdAndDelete(id) // assuming you're using Mongoose
+        res.json({ message: 'Deleted successfully' })
+    } catch (err) {
+        res.status(500).json({ error: err.message })
+    }
+}
+
+exports.teacher_update = async (req, res) => {
+    try {
+        const { id } = req.params
+        const update = await Teacher.findByIdAndUpdate(id, req.body, { new: true })
+        res.json(update)
+    } catch (err) {
+        console.log(err)
+        res.status(500).json({ error: err.message })
+    }
+}
 // exports.getAll_get = async (req, res) => {
 //     try {
 //         const teacher = await Teacher.find()

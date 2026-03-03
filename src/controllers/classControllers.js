@@ -20,13 +20,23 @@ const class_get = async (req, res) => {
   }
 }
 
-// const class_getAll = async (req, res) => {
-//   try {
-//     const all = await Addclass.find()
-//     const total = await Addclass.countDocuments()
-//     res.status(201).json(total)
-//   } catch (err) {
-//     console.log(err)
-//   }
-// }
- module.exports = { class_post, class_get};
+const class_delete = async(req ,res) =>{
+  try {
+      const { id } = req.params
+      await Addclass.findByIdAndDelete(id) // assuming you're using Mongoose
+      res.json({ message: 'Deleted successfully' })
+  } catch (err) {
+      res.status(500).json({ error: err.message })
+  }
+}
+
+const class_update = async (req, res) => {
+  try {
+      const { id } = req.params
+      const updated = await Addclass.findByIdAndUpdate(id, req.body, { new: true })
+      res.json(updated)
+  } catch (err) {
+      res.status(500).json({ error: err.message })
+  }
+}
+ module.exports = { class_post, class_get ,class_delete ,class_update };
