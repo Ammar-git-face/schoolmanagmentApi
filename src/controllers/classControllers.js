@@ -3,16 +3,18 @@ const Teacher  = require('../models/Teachers')
 
 const class_post = async (req, res) => {
     try {
-        // Teacher field removed — assign teachers via teacher page instead
-        const { grade, section, capacity } = req.body
-        if (!grade) return res.status(400).json({ error: 'Grade is required' })
+        const { name, grade } = req.body
 
-        const newClass = new Addclass({
-            grade, section, capacity,
-            schoolCode: req.schoolCode
+        // ✅ Both name and grade required — matches what the frontend sends
+        if (!name || !grade)
+            return res.status(400).json({ error: 'Class name and grade are required' })
+
+        const newClass = await Addclass.create({
+            name,
+            grade,
+            schoolCode: req.schoolCode   // ✅ always from middleware
         })
-        const saved = await newClass.save()
-        res.status(201).json(saved)
+        res.status(201).json(newClass)
     } catch (err) {
         res.status(400).json({ error: err.message })
     }
@@ -49,14 +51,4 @@ const class_update = async (req, res) => {
     }
 }
 
-// Used by class page to show teachers dropdown
-const get_teachers_for_class = async (req, res) => {
-    try {
-        const teachers = await Teacher.find({ schoolCode: req.schoolCode }, 'fullname assignedClasses').lean()
-        res.json(teachers)
-    } catch (err) {
-        res.status(500).json({ error: err.message })
-    }
-}
-
-module.exports = { class_post, class_get, class_delete, class_update, get_teachers_for_class }
+module.exports = { class_post, class_get, class_delete, class_update }

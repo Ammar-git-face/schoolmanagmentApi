@@ -2,6 +2,8 @@ const Payroll    = require('../models/Payroll')
 const Teacher    = require('../models/Teachers')
 const axios      = require('axios')
 const nodemailer = require('nodemailer')   // ✅ top-level — fails loudly on startup if missing
+const School     = require('../models/school')
+const Admin      = require('../models/admin')
 
 // Generate payroll for all teachers for a given month/year
 exports.generatePayroll = async (req, res) => {
@@ -349,19 +351,38 @@ exports.ownerRegister = async (req, res) => {
             isActive:       true
         })
 
-        // ── Create Admin account for this school ────────────────────────────
-        // Admin uses the same email + password as the owner for initial login
-        // Admin can change their password later from settings
-        const adminExists = await Admin.findOne({ email, schoolCode })
-        if (!adminExists) {
-            const hashedAdmin = await bcrypt.hash(password, 10)
-            await Admin.create({
-                fullname,
+        // ── Create School record ───────────────────────────────────────────
+        // School model is used by uploadLogo, getSchoolInfo, dashboard etc.
+        // Without this record, logo upload silently fails (findOneAndUpdate finds nothing)
+        const schoolExists = await School.findOne({ schoolCode })
+        if (!schoolExists) {
+            await School.create({
+                name:       schoolName,
                 email,
-                password: hashedAdmin,
-                role:       'admin',
+                phone:      phone         || '',
+                address:    schoolAddress || '',
                 schoolCode
             })
+        }
+
+        // ── Create Admin account for this school ────────────────────────────
+        // ✅ Pass PLAIN password — Admin pre-save hook hashes it ONCE
+        // Previously we passed bcrypt(password) and the hook hashed again → double hash → login fail
+        const adminExists = await Admin.findOne({ email, schoolCode })
+        if (!adminExists) {
+            try {
+                await Admin.create({
+                    fullname,
+                    email,
+                    password,   // ✅ plain — pre-save hook hashes it
+                    role:       'admin',
+                    schoolCode
+                })
+            } catch (adminErr) {
+                // Non-fatal — Owner and School already created successfully
+                // Admin creation may fail if email already exists globally
+                console.error('Admin auto-create warning:', adminErr.message)
+            }
         }
 
         // ── Send credentials email ──────────────────────────────────────────

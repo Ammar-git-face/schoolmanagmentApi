@@ -1,27 +1,21 @@
 const Attendance = require('../models/Attendance')
-const Student = require('../models/student')
-const Teacher = require('../models/Teachers')
+const Student    = require('../models/student')
+const Teacher    = require('../models/Teachers')
 
 // Teacher marks attendance for entire class on a given date
 exports.markAttendance = async (req, res) => {
     try {
-        const teacherId = req.body.teacherId
-        const className = req.body.className
-        const date = req.body.date         // "YYYY-MM-DD"
-        const term = req.body.term
-        const session = req.body.session
-        const records = req.body.records   // [{ studentId, status, remark }]
-        const schoolCode = req.schoolCode
+        const { teacherId, className, date, term, session, records } = req.body
+        const sc = req.schoolCode   // ✅ always from middleware
 
-        if (!teacherId || !className || !date || !term || !session || !records) {
+        if (!teacherId || !className || !date || !term || !session || !records)
             return res.status(400).json({ error: 'All fields are required' })
-        }
 
-        const teacher = await Teacher.findById(teacherId).lean()
+        const teacher = await Teacher.findOne({ _id: teacherId, schoolCode: sc }).lean()
         if (!teacher) return res.status(404).json({ error: 'Teacher not found' })
 
-        // get all students in this class
-        const students = await Student.find({ studentClass: className }).lean()
+        // ✅ Only students in this school
+        const students = await Student.find({ studentClass: className, schoolCode: sc }).lean()
         if (!students.length) return res.status(404).json({ error: 'No students found in this class' })
 
         const studentMap = {}
@@ -29,20 +23,20 @@ exports.markAttendance = async (req, res) => {
 
         const ops = records.map(r => ({
             updateOne: {
-                filter: { studentId: r.studentId, date },
+                filter: { studentId: r.studentId, date, schoolCode: sc },
                 update: {
                     $set: {
-                        studentId: r.studentId,
-                        studentName: studentMap[r.studentId]?.fullname || 'Unknown',
+                        studentId:    r.studentId,
+                        studentName:  studentMap[r.studentId]?.fullname || 'Unknown',
                         studentClass: className,
                         teacherId,
-                        schoolCode,
-                        teacherName: teacher.fullname,
+                        teacherName:  teacher.fullname || teacher.name || 'Teacher',
                         date,
-                        status: r.status,
+                        status:       r.status,
                         term,
                         session,
-                        remark: r.remark || ''
+                        remark:       r.remark || '',
+                        schoolCode:   sc       // ✅ saved on every record
                     }
                 },
                 upsert: true
@@ -52,30 +46,39 @@ exports.markAttendance = async (req, res) => {
         await Attendance.bulkWrite(ops)
         res.json({ message: 'Attendance marked successfully' })
     } catch (err) {
-        console.log('markAttendance error:', err.message)
+        console.error('markAttendance error:', err.message)
         res.status(500).json({ error: err.message })
     }
 }
 
-// Get all students in a class with today's attendance status (for teacher marking page)
+// Get all students in a class with today's attendance (teacher marking page)
 exports.getClassAttendance = async (req, res) => {
     try {
+        const sc        = req.schoolCode
         const className = req.params.className
-        const date = req.params.date
+        const date      = req.params.date
 
-        const students = await Student.find({ studentClass: className }, 'fullname studentClass').lean()
-        const existingRecords = await Attendance.find({ studentClass: className, date }).lean()
+        // ✅ Only this school's students
+        const students = await Student.find(
+            { studentClass: className, schoolCode: sc },
+            'fullname studentClass'
+        ).lean()
+
+        // ✅ Only this school's attendance records
+        const existingRecords = await Attendance.find(
+            { studentClass: className, date, schoolCode: sc }
+        ).lean()
 
         const recordMap = {}
         existingRecords.forEach(r => { recordMap[r.studentId.toString()] = r })
 
         const result = students.map(s => ({
-            studentId: s._id,
-            studentName: s.fullname,
+            studentId:    s._id,
+            studentName:  s.fullname,
             studentClass: s.studentClass,
-            status: recordMap[s._id.toString()]?.status || 'present',
-            remark: recordMap[s._id.toString()]?.remark || '',
-            marked: !!recordMap[s._id.toString()]
+            status:       recordMap[s._id.toString()]?.status || 'present',
+            remark:       recordMap[s._id.toString()]?.remark || '',
+            marked:       !!recordMap[s._id.toString()]
         }))
 
         res.json({ students: result, alreadyMarked: existingRecords.length > 0 })
@@ -84,23 +87,24 @@ exports.getClassAttendance = async (req, res) => {
     }
 }
 
-// Get attendance records for a specific student (for parent view)
+// Get attendance for a specific student (parent view)
 exports.getStudentAttendance = async (req, res) => {
     try {
+        const sc        = req.schoolCode
         const studentId = req.params.studentId
-        const term = req.query.term
-        const session = req.query.session
+        const { term, session } = req.query
 
-        const query = { studentId }
-        if (term) query.term = term
+        // ✅ Scoped to school so parents can't query other schools' students
+        const query = { studentId, schoolCode: sc }
+        if (term)    query.term    = term
         if (session) query.session = session
 
         const records = await Attendance.find(query).sort({ date: -1 }).lean()
 
-        const total = records.length
+        const total   = records.length
         const present = records.filter(r => r.status === 'present').length
-        const absent = records.filter(r => r.status === 'absent').length
-        const late = records.filter(r => r.status === 'late').length
+        const absent  = records.filter(r => r.status === 'absent').length
+        const late    = records.filter(r => r.status === 'late').length
         const attendanceRate = total > 0 ? Math.round((present + late) / total * 100) : 0
 
         res.json({ records, summary: { total, present, absent, late, attendanceRate } })
@@ -109,27 +113,25 @@ exports.getStudentAttendance = async (req, res) => {
     }
 }
 
-// Admin: get all attendance with filters
+// Admin: all attendance with filters
 exports.getAllAttendance = async (req, res) => {
     try {
-        const className = req.query.className
-        const date = req.query.date
-        const term = req.query.term
-        const session = req.query.session
+        const sc = req.schoolCode
+        const { className, date, term, session } = req.query
 
-        const query = {}
+        // ✅ Always scoped to school
+        const query = { schoolCode: sc }
         if (className) query.studentClass = className
-        if (date) query.date = date
-        if (term) query.term = term
-        if (session) query.session = session
+        if (date)      query.date         = date
+        if (term)      query.term         = term
+        if (session)   query.session      = session
 
         const records = await Attendance.find(query).sort({ date: -1 }).limit(200).lean()
 
-        // summary stats
-        const total = records.length
+        const total   = records.length
         const present = records.filter(r => r.status === 'present').length
-        const absent = records.filter(r => r.status === 'absent').length
-        const late = records.filter(r => r.status === 'late').length
+        const absent  = records.filter(r => r.status === 'absent').length
+        const late    = records.filter(r => r.status === 'late').length
 
         res.json({ records, summary: { total, present, absent, late } })
     } catch (err) {
@@ -137,23 +139,23 @@ exports.getAllAttendance = async (req, res) => {
     }
 }
 
-// Admin: get attendance summary per class
+// Admin: attendance summary per class
 exports.getClassSummary = async (req, res) => {
     try {
-        const term = req.query.term
-        const session = req.query.session
+        const sc = req.schoolCode
+        const { term, session } = req.query
 
-        const query = {}
-        if (term) query.term = term
+        // ✅ Always scoped to school
+        const query = { schoolCode: sc }
+        if (term)    query.term    = term
         if (session) query.session = session
 
         const records = await Attendance.find(query).lean()
 
         const classMap = {}
         records.forEach(r => {
-            if (!classMap[r.studentClass]) {
+            if (!classMap[r.studentClass])
                 classMap[r.studentClass] = { present: 0, absent: 0, late: 0, total: 0 }
-            }
             classMap[r.studentClass][r.status]++
             classMap[r.studentClass].total++
         })
@@ -161,7 +163,8 @@ exports.getClassSummary = async (req, res) => {
         const summary = Object.entries(classMap).map(([className, data]) => ({
             className,
             ...data,
-            attendanceRate: data.total > 0 ? Math.round((data.present + data.late) / data.total * 100) : 0
+            attendanceRate: data.total > 0
+                ? Math.round((data.present + data.late) / data.total * 100) : 0
         }))
 
         res.json(summary)

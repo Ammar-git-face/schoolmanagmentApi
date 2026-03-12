@@ -9,7 +9,7 @@ const {
     getSchoolInfo,
     uploadLogo,
     updateSchoolInfo
-} = require("../controllers/Schoolcontroller ")
+} = require("../controllers/Schoolcontroller")
 
 router.post("/register", registerSchool)              // public — no auth
 router.get("/info", attachSchool, getSchoolInfo)      // protected

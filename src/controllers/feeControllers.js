@@ -184,17 +184,6 @@ exports.get_paystack =  async (req, res) => {
 
 
 
-// ============ In your server.js add ============
-// const feeRouter = require('./src/routes/feeRoutes')
-// app.use('/fees', feeRouter)
-
-// ============ Install axios if not already installed ============
-// npm install axios
-
-// ============ Add to your .env file ============
-// PAYSTACK_SECRET_KEY=sk_test_xxxxxxxxxxxxxxxxxxxxxxxx
-// Get your key from https://dashboard.paystack.com/#/settings/developer
-
 
 
 
