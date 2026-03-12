@@ -8,6 +8,7 @@ const alertSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    schoolCode: { type: String, required: true, index: true } ,
     to: {
         type: String,
         enum: ["All", "Parent", "Teachers"], // match your frontend

@@ -29,6 +29,7 @@ const salarySchema = new mongoose.Schema({
     month: String,       // e.g "January 2024"
     amount: Number,
     status: { type: String, enum: ['paid', 'pending'], default: 'pending' },
+    schoolCode: { type: String, required: true, index: true } ,
     paidDate: Date,
 }, { timestamps: true })
 

@@ -1,21 +1,13 @@
-const mongoose = require('mongoose');
-const Studentschema = new mongoose.Schema({
-    fullname: {
-        type: String,
-        required: true
-    },
+// models/student.js
+const mongoose = require('mongoose')
 
-    parent: {
-        type: String,
-        required: true
-    },
-    studentClass: {
-        type: String,
-        required: true
-    },
-
-} , { timestamps:true})
-
-const Student = mongoose.model('Student', Studentschema);
-module.exports = Student
+const studentSchema = new mongoose.Schema({
+    fullname: String,
+    studentClass: String,
+    schoolCode: { type: String, required: true, index: true } ,
+    parent: String,           // keep for display
+    parentId: { type: mongoose.Schema.Types.ObjectId, ref: 'Parent', default: null },
+    familyCode: String       // add this
+}, { timestamps: true })
+module.exports = mongoose.models.Student || mongoose.model('Student', studentSchema)
 

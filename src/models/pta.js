@@ -1,16 +1,17 @@
 const mongoose = require('mongoose')
 
-const ptaschema = new mongoose.Schema({
-    title: String,
-    agenda: String,
-    type: String, // 'audio' or 'video'
-    time: String,
-    date: String,
-    duration: String,
-    allTeachers: Boolean,
-    allParents: Boolean,
+const ptaSchema = new mongoose.Schema({
+    title: { type: String, required: true },
+    agenda: { type: String },
+    type: { type: String, enum: ['video', 'audio'], default: 'video' },
+    date: { type: String },
+    time: { type: String },
+    schoolCode: { type: String, required: true, index: true } ,
+    duration: { type: String },
+    roomName: { type: String }, // unique Jitsi room name
+    status: { type: String, enum: ['upcoming', 'completed'], default: 'upcoming' },
+    allTeachers: { type: Boolean, default: false },
+    allParents: { type: Boolean, default: false },
 }, { timestamps: true })
 
-const Pta = mongoose.model('Pta', ptaschema)
-module.exports = Pta;
-
+module.exports = mongoose.models.PTA || mongoose.model('PTA', ptaSchema)

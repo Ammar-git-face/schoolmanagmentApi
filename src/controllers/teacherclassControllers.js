@@ -1,11 +1,11 @@
 const mongoose = require('mongoose')
-const teacherClass = require('../models/Teachers')
+const Teacher = require('../models/Teachers')
 
-// then replace ALL TeacherClass with Teacher:
+// then replace ALL Teacher with Teacher:
 exports.teacher_put = async (req, res) => {
     try {
         const { classId } = req.body
-        const teacher = await teacherClass.findByIdAndUpdate(
+        const teacher = await Teacher.findByIdAndUpdate(
             req.params.id,
             { $pull: { assignedClasses: { _id: classId } } },
             { new: true }
@@ -24,7 +24,7 @@ exports.teacher_assign = async (req, res) => {
         if (!className || !subject)
             return res.status(400).json({ error: "className and subject are required" })
 
-        const teacher = await teacherClass.findByIdAndUpdate(
+        const teacher = await Teacher.findByIdAndUpdate(
             req.params.id,
             { $push: { assignedClasses: { className, subject } } },
             { new: true }
@@ -38,9 +38,15 @@ exports.teacher_assign = async (req, res) => {
 
 exports.teacher_get = async (req, res) => {
     try {
-        const teacher = await teacherClass.findById(req.params.id)
+        const teacher = await Teacher.findById(req.params.id)
         res.json(teacher)
     } catch (err) {
         res.status(500).json({ error: err.message })
     }
 }
+// Add to your teacherControllers.js
+
+
+
+// Add to teacherRoutes.js — BEFORE /:id route:
+// router.get("/dashboard-stats/:id", teacherControllers.teacher_dashboard_stats)

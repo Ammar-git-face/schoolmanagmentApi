@@ -4,6 +4,7 @@ const salarySchema = new mongoose.Schema({
     teacherId: { type: mongoose.Schema.Types.ObjectId, ref: 'Teacher', required: true },
     teacherName: String,
     month: String,       // e.g "January 2024"
+    schoolCode: { type: String, required: true, index: true } ,
     amount: Number,
     status: { type: String, enum: ['paid', 'pending'], default: 'pending' },
     paidDate: Date,

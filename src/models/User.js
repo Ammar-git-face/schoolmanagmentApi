@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema({
         lowercase: true,
         validate: [isEmail, 'enter a valid email']
     },
+    schoolCode: { type: String, required: true, index: true } ,
     password: {
         type: String,
         unique: [true, 'please enter a password'],

@@ -1,20 +1,25 @@
-const mongoose = require('mongoose');
+const mongoose = require('mongoose')
 
 const classSchema = new mongoose.Schema({
     name: {
         type: String,
         required: true
     },
-    teacher: { // lowercase for consistency
+    schoolCode: {
+        type: String,
+        required: true,
+        index: true
+    },
+    teacher: {
         type: String,
         required: true
     },
     grade: {
         type: String,
-        enum: ["Grade 9", "Grade 10", "Grade 11", "Grade 12"], // match your frontend
         required: true
+        // ✅ No enum restriction — admin can use any grade name
     }
-}, { timestamps: true });
+}, { timestamps: true })
 
-const Addclass = mongoose.model("Class", classSchema);
-module.exports = Addclass;
+const Addclass = mongoose.model('Class', classSchema)
+module.exports = Addclass
