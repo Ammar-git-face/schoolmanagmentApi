@@ -11,6 +11,7 @@ exports.markAttendance = async (req, res) => {
         const term = req.body.term
         const session = req.body.session
         const records = req.body.records   // [{ studentId, status, remark }]
+        const schoolCode = req.schoolCode
 
         if (!teacherId || !className || !date || !term || !session || !records) {
             return res.status(400).json({ error: 'All fields are required' })
@@ -35,6 +36,7 @@ exports.markAttendance = async (req, res) => {
                         studentName: studentMap[r.studentId]?.fullname || 'Unknown',
                         studentClass: className,
                         teacherId,
+                        schoolCode,
                         teacherName: teacher.fullname,
                         date,
                         status: r.status,

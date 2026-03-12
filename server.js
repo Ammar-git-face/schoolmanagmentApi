@@ -56,9 +56,10 @@ app.use('/superadmin', superAdminRoutes) // ✅ Super admin dashboard API
 // ✅ FIX: owner-login and owner-register must be public (no attachSchool)
 //    They were previously caught by:  app.use('/payroll', attachSchool, rollrouter)
 //    which rejected them with "No token provided" because the user has no token yet.
-const { ownerLogin, ownerRegister } = require('./src/controllers/Payrollcontroller')
+const { ownerLogin, ownerRegister, testEmail } = require('./src/controllers/Payrollcontroller')
 app.post('/payroll/owner-login',    ownerLogin)
 app.post('/payroll/owner-register', ownerRegister)
+app.post('/payroll/test-email',     testEmail)   // ✅ test: POST { "to": "your@email.com" }
 
 // ── Protected routes (attachSchool required) ─────
 app.use('/student',       attachSchool, studentRoute)

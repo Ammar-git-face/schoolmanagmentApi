@@ -1,6 +1,7 @@
-const Payroll = require('../models/Payroll')
-const Teacher = require('../models/Teachers')
-const axios = require('axios')
+const Payroll    = require('../models/Payroll')
+const Teacher    = require('../models/Teachers')
+const axios      = require('axios')
+const nodemailer = require('nodemailer')   // ✅ top-level — fails loudly on startup if missing
 
 // Generate payroll for all teachers for a given month/year
 exports.generatePayroll = async (req, res) => {
@@ -315,8 +316,6 @@ exports.ownerRegister = async (req, res) => {
         const bcrypt      = require('bcrypt')
         const Owner       = require('../models/Owner')
         const Admin       = require('../models/Admin')
-        const nodemailer  = require('nodemailer')
-
         const { fullname, email, password, phone, schoolName, schoolAddress, plan } = req.body
 
         if (!fullname || !email || !password || !schoolName)
@@ -369,13 +368,24 @@ exports.ownerRegister = async (req, res) => {
         // Non-blocking — if email fails we still return success with credentials in response
         const sendCredentials = async () => {
             try {
+                // ✅ Port 587 + STARTTLS — more reliable than 465 on Windows/Nigerian ISPs
                 const transporter = nodemailer.createTransport({
-                    service: 'gmail',
+                    host:   'smtp.gmail.com',
+                    port:    587,
+                    secure:  false,          // false = STARTTLS (upgrades after connect)
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS
+                    },
+                    tls: {
+                        rejectUnauthorized: false,
+                        ciphers: 'SSLv3'
                     }
                 })
+
+                // Verify connection — prints exact error to terminal if credentials/network wrong
+                const verified = await transporter.verify()
+                console.log('SMTP connected:', verified)
 
                 await transporter.sendMail({
                     from:    `"School Management Platform" <${process.env.EMAIL_USER}>`,
@@ -437,6 +447,36 @@ exports.ownerRegister = async (req, res) => {
         })
     } catch (err) {
         console.error('ownerRegister error:', err.message)
+        res.status(500).json({ error: err.message })
+    }
+}
+// ── POST /payroll/test-email ─────────────────────────────────────────────────
+// Temporarily call this to verify nodemailer is working WITHOUT registering a school
+// Remove this route in production
+exports.testEmail = async (req, res) => {
+    try {
+        const transporter = nodemailer.createTransport({
+            host:   'smtp.gmail.com',
+            port:    587,
+            secure:  false,
+            auth: {
+                user: process.env.EMAIL_USER,
+                pass: process.env.EMAIL_PASS
+            },
+            tls: { rejectUnauthorized: false, ciphers: 'SSLv3' }
+        })
+
+        await transporter.verify()
+        await transporter.sendMail({
+            from:    process.env.EMAIL_USER,
+            to:      req.body.to || process.env.EMAIL_USER,
+            subject: 'Test Email — School Platform',
+            text:    'If you see this, nodemailer is working correctly.'
+        })
+
+        res.json({ message: 'Test email sent successfully to ' + (req.body.to || process.env.EMAIL_USER) })
+    } catch (err) {
+        console.error('testEmail error:', err.message)
         res.status(500).json({ error: err.message })
     }
 }
