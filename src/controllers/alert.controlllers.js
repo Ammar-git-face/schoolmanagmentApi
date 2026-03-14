@@ -29,7 +29,7 @@ const alert_get = async (req, res) => {
 const alert_count = async (req, res) => {
     try {
         const count = await Alert.countDocuments({ schoolCode: req.schoolCode })
-        res.status(200).json(count)
+        res.status(200).json({ count })   // ✅ consistent shape for sidebar + frontend
     } catch (err) {
         res.status(500).json({ message: 'Failed to count alerts' })
     }

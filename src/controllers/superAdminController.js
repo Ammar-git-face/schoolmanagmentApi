@@ -106,20 +106,27 @@ exports.superAdminLogin = async (req, res) => {
         const jwt = require('jsonwebtoken')
         const { email, password } = req.body
 
-        const SUPER_EMAIL = process.env.SUPER_ADMIN_EMAIL
-        const SUPER_PASS  = process.env.SUPER_ADMIN_PASSWORD
+        // ✅ .trim() strips any invisible whitespace dotenv might leave
+        const SUPER_EMAIL = (process.env.SUPER_ADMIN_EMAIL || '').trim()
+        const SUPER_PASS  = (process.env.SUPER_ADMIN_PASSWORD || '').trim()
+
+        // Debug log — remove after confirming it works
+        console.log('SuperAdmin env check — email set:', !!SUPER_EMAIL, '| pass set:', !!SUPER_PASS)
 
         if (!SUPER_EMAIL || !SUPER_PASS) {
             return res.status(500).json({ error: 'Super admin credentials not configured in .env' })
         }
 
-        if (email !== SUPER_EMAIL || password !== SUPER_PASS) {
+        // ✅ Strip any stray quotes the frontend might send
+        const cleanPassword = password.replace(/['"]/g, '').trim()
+        const cleanEmail    = email.replace(/['"]/g, '').trim()
+        if (cleanEmail !== SUPER_EMAIL || cleanPassword !== SUPER_PASS) {
             return res.status(401).json({ error: 'Invalid super admin credentials' })
         }
 
         const token = jwt.sign(
             { role: 'superadmin', email },
-            process.env.JWT_SECRET || 'your_jwt_secret',
+            process.env.JWT_SECRET || 'mySuperSecretKey123',  // ✅ unified secret
             { expiresIn: '7d' }
         )
 

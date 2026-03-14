@@ -9,7 +9,7 @@ const {
     getOwnerStats,
     ownerLogin,
     ownerRegister
-} = require('../controllers/payrollController')
+} = require('../controllers/Payrollcontroller')
 
 rollrouter.post('/generate', generatePayroll)
 rollrouter.get('/all', getPayroll)

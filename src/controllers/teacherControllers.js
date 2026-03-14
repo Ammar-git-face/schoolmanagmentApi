@@ -1,33 +1,36 @@
 const Teacher = require('../models/Teachers')
 
-// POST /teacher — add teacher (schoolCode from token via attachSchool)
+// POST /teacher — admin creates a teacher
 exports.teacher_post = async (req, res) => {
     try {
+        // ✅ schoolCode comes from attachSchool middleware
         const teacher = new Teacher({ ...req.body, schoolCode: req.schoolCode })
         const saved = await teacher.save()
-        console.log('Teacher added:', saved.fullname)
         res.status(201).json(saved)
     } catch (err) {
-        console.log('teacher_post error:', err.message)
         res.status(500).json({ error: err.message })
     }
 }
 
-// GET /teacher/getTeachers — only this school's teachers
+// GET /teacher/getTeachers — admin lists all teachers in school
 exports.get_teacher = async (req, res) => {
     try {
-        const teachers = await Teacher.find({ schoolCode: req.schoolCode }).sort({ createdAt: -1 })
-        res.status(200).json(teachers)
+        // ✅ Filter by schoolCode — don't leak other schools' teachers
+        const teachers = await Teacher.find({ schoolCode: req.schoolCode })
+            .select('-password')
+        res.json(teachers)
     } catch (err) {
-        console.log('get_teacher error:', err.message)
         res.status(500).json({ error: err.message })
     }
 }
 
-// GET /teacher/:id
+// GET /teacher/:id — teacher fetches own profile
 exports.get_teacher_by_id = async (req, res) => {
     try {
-        const teacher = await Teacher.findOne({ _id: req.params.id, schoolCode: req.schoolCode })
+        const teacher = await Teacher.findOne({
+            _id: req.params.id,
+            schoolCode: req.schoolCode
+        }).select('-password')
         if (!teacher) return res.status(404).json({ error: 'Teacher not found' })
         res.json(teacher)
     } catch (err) {
@@ -45,7 +48,6 @@ exports.teacher_delete = async (req, res) => {
     }
 }
 
-
 // PUT /teacher/:id
 exports.teacher_update = async (req, res) => {
     try {
@@ -53,7 +55,8 @@ exports.teacher_update = async (req, res) => {
             { _id: req.params.id, schoolCode: req.schoolCode },
             req.body,
             { new: true }
-        )
+        ).select('-password')
+        if (!updated) return res.status(404).json({ error: 'Teacher not found' })
         res.json(updated)
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -64,15 +67,19 @@ exports.teacher_update = async (req, res) => {
 exports.assign_class = async (req, res) => {
     try {
         const { className, subject } = req.body
-        if (!className || !subject)
-            return res.status(400).json({ error: 'className and subject are required' })
 
-        const teacher = await Teacher.findOneAndUpdate(
-            { _id: req.params.id, schoolCode: req.schoolCode },
-            { $push: { assignedClasses: { className, subject } } },
-            { new: true }
-        )
+        // step 1: find the teacher first
+        const teacher = await Teacher.findOne({ _id: req.params.id })
         if (!teacher) return res.status(404).json({ error: 'Teacher not found' })
+
+        // step 2: check for duplicate class
+        const alreadyAssigned = teacher.assignedClasses.some(c => c.className === className)
+        if (alreadyAssigned) return res.status(400).json({ error: 'Class already assigned' })
+
+        // step 3: now push the new class
+        teacher.assignedClasses.push({ className, subject })
+        await teacher.save()
+
         res.json(teacher)
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -82,15 +89,12 @@ exports.assign_class = async (req, res) => {
 // PUT /teacher/:id/remove-class
 exports.remove_class = async (req, res) => {
     try {
-        const { classId } = req.body
-        if (!classId)
-            return res.status(400).json({ error: 'classId is required' })
-
+        const { className } = req.body
         const teacher = await Teacher.findOneAndUpdate(
             { _id: req.params.id, schoolCode: req.schoolCode },
-            { $pull: { assignedClasses: { _id: classId } } },
+            { $pull: { assignedClasses: { className } } },
             { new: true }
-        )
+        ).select('-password')
         if (!teacher) return res.status(404).json({ error: 'Teacher not found' })
         res.json(teacher)
     } catch (err) {
@@ -101,18 +105,25 @@ exports.remove_class = async (req, res) => {
 // GET /teacher/dashboard-stats/:id
 exports.teacher_dashboard_stats = async (req, res) => {
     try {
-        const teacher = await Teacher.findOne({ _id: req.params.id, schoolCode: req.schoolCode })
+        const teacher = await Teacher.findOne({
+            _id: req.params.id,
+            schoolCode: req.schoolCode
+        })
         if (!teacher) return res.status(404).json({ error: 'Teacher not found' })
 
         const Student = require('../models/student')
         const classNames = (teacher.assignedClasses || []).map(c => c.className)
-        const students = await Student.find({ studentClass: { $in: classNames }, schoolCode: req.schoolCode })
+        const students = await Student.find({
+            studentClass: { $in: classNames },
+            schoolCode: req.schoolCode
+        })
 
         res.json({
             myClasses: teacher.assignedClasses?.length || 0,
             totalStudents: students.length,
             monthlySalary: teacher.salary || 0,
-            salaryStatus: teacher.paid || 'unpaid'
+            salaryStatus: teacher.paid || 'unpaid',
+            assignedClasses: teacher.assignedClasses || []
         })
     } catch (err) {
         res.status(500).json({ error: err.message })

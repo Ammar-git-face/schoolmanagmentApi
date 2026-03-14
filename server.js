@@ -59,7 +59,7 @@ app.use('/superadmin', superAdminRoutes) // ✅ Super admin dashboard API
 const { ownerLogin, ownerRegister, testEmail } = require('./src/controllers/Payrollcontroller')
 app.post('/payroll/owner-login',    ownerLogin)
 app.post('/payroll/owner-register', ownerRegister)
-app.post('/payroll/test-email',     testEmail)   // ✅ test: POST { "to": "your@email.com" }
+//app.post('/payroll/test-email',     testEmail)   // ✅ test: POST { "to": "your@email.com" }
 
 // ── Protected routes (attachSchool required) ─────
 app.use('/student',       attachSchool, studentRoute)
@@ -85,6 +85,15 @@ const io = new Server(server, {
         methods: ['GET', 'POST'],
         credentials: true
     }
+})
+
+app.get('/superadmin/env-check', (req, res) => {
+    res.json({
+        email_set: !!process.env.SUPER_ADMIN_EMAIL,
+        pass_set:  !!process.env.SUPER_ADMIN_PASSWORD,
+        email_val: process.env.SUPER_ADMIN_EMAIL,   // remove after confirming
+        pass_len:  (process.env.SUPER_ADMIN_PASSWORD || '').length
+    })
 })
 
 const onlineUsers = {}
