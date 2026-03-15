@@ -59,9 +59,9 @@
 //     }
 // }
 
-const PTA     = require('../models/PTA')
+const PTA     = require('../models/pta')
 const Teacher = require('../models/Teachers')
-const Parent  = require('../models/Parent')
+const Parent  = require('../models/parent')
 
 // POST /pta — create meeting
 exports.create_meeting = async (req, res) => {
