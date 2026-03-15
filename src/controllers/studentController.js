@@ -1,5 +1,5 @@
 const Student = require('../models/student')
-const Parent  = require('../models/Parent')
+const Parent  = require('../models/parent')
 
 // POST /student
 const student_post = async (req, res) => {
