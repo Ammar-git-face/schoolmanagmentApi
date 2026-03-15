@@ -1,6 +1,6 @@
 const mongoose = require('mongoose')
 const Message  = require('../models/Message')
-const Admin    = require('../models/Admin')
+const Admin    = require('../models/admin')
 const Teacher  = require('../models/Teachers')
 const Parent   = require('../models/Parent')
 const Student  = require('../models/student')
