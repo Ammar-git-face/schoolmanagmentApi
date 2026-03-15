@@ -26,6 +26,9 @@ app.use(cors({
     credentials: true
 }))
 
+const fs = require('fs')
+if (fs.existsSync('.env')) require('dotenv').config()
+
 // ── Middleware ────────────────────────────────────
 const { attachSchool } = require("./src/middlewares/schoolMiddleware.js")
 
