@@ -1,6 +1,6 @@
 const express = require('express')
 const routes  = express.Router()
-const authController = require('../controllers/authControllerS')
+const authController = require('../controllers/authControllers')
 const { attachSchool } = require('../middlewares/schoolMiddleware.js')
 
 // ── Admin ──────────────────────────────────────────────────────────────────
