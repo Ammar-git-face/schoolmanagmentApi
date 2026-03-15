@@ -1,5 +1,5 @@
 const mongoose = require('mongoose')
-const Message  = require('../models/Message')
+const Message  = require('../models/Message ')
 const Admin    = require('../models/Admin')
 const Teacher  = require('../models/Teachers')
 const Parent   = require('../models/Parent')
