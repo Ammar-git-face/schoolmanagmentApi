@@ -12,7 +12,7 @@ const cors = require('cors')
 const cookieParser = require('cookie-parser')
 const http = require('http')
 const { Server } = require('socket.io')
-const Message = require('./src/models/Message ')
+const Message = require('./src/models/Message')
 
 const app = express()
 
