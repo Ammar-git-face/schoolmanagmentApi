@@ -2,7 +2,7 @@ const mongoose = require('mongoose')
 const Message  = require('../models/Message')
 const Admin    = require('../models/admin')
 const Teacher  = require('../models/Teachers')
-const Parent   = require('../models/Parent')
+const Parent   = require('../models/parent')
 const Student  = require('../models/student')
 
 const getConversationId = (id1, id2) => [String(id1), String(id2)].sort().join('_')
