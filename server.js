@@ -46,7 +46,7 @@ const teacherClassRouter = require('./src/routes/teacherClassRoutes')
 const atnrouter = require('./src/routes/attendanceroutes')
 const resultRouter = require('./src/routes/resultRoute')
 const msgrouter = require('./src/routes/messageRoute')
-const superAdminRoutes = require('./src/routes/superAdminRoutes')   // ✅ NEW
+const superAdminRoutes = require('./src/routes/superAdminroutes')   // ✅ NEW
 
 // ── Public routes (NO auth required) ─────────────
 app.use('/auth', authRoutes)
