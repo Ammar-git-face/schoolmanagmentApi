@@ -5,7 +5,7 @@ const {
     deleteSubject, getClassesWithSubjects,
     submitCA, submitExam, getClassResults,
     approveResults, addRemarks, getReportCard
-} = require('../controllers/subjectController')
+} = require('../controllers/SubjectController')
 
 // Subject management
 router.post('/create', createSubject)
