@@ -6,7 +6,7 @@ const {
     getStudentAttendance,
     getAllAttendance,
     getClassSummary
-} = require('../controllers/attendanceController')
+} = require('../controllers/AttendanceController')
 const {attachSchool} = require('../middlewares/schoolMiddleware.js')
 
 atnrouter.post('/mark', markAttendance , attachSchool)
