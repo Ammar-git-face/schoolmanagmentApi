@@ -28,6 +28,7 @@ app.use(cors({
 
 const fs = require('fs')
 if (fs.existsSync('.env')) require('dotenv').config()
+console.log('MONGO_URI:', process.env.MONGO_URI ? 'SET' : 'NOT SET')
 
 // ── Middleware ────────────────────────────────────
 const { attachSchool } = require("./src/middlewares/schoolMiddleware.js")
