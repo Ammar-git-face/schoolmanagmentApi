@@ -1,6 +1,6 @@
 const Student = require('../models/student')
 const Teacher = require('../models/Teachers')
-const Fee     = require('../models/Fee')
+const Fee     = require('../models/fee')
 
 const dashboardStats = async (req, res) => {
     try {
