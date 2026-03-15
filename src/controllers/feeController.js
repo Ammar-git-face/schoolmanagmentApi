@@ -1,4 +1,4 @@
-const Fee = require('../models/Fee')
+const Fee = require('../models/fee')
 const axios = require('axios')
 
 const FLW_SECRET = process.env.FLW_SECRET_KEY
