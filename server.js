@@ -87,7 +87,7 @@ app.use('/attendance', attachSchool, atnrouter)
 const server = http.createServer(app)
 const io = new Server(server, {
     cors: {
-        origin: 'http://localhost:3000',
+        origin: '*',
         methods: ['GET', 'POST'],
         credentials: true
     }
@@ -198,10 +198,10 @@ const dburl = process.env.MONGO_URI || "mongodb://localhost:27017/schoolDb"
 // mongoose.connect(dburl)
 //     .then(() => server.listen(5000, () => console.log('✅ Server running on port 5000')))
 //     .catch(err => console.log('❌ DB connection error:', err))
-
+const PORT = process.env.PORT || 5000
 mongoose.connect(dburl)
     .then(() => {
         console.log('✅ MongoDB connected to:', dburl.substring(0, 40))
-        server.listen(5000, () => console.log('✅ Server running on port 5000'))
+        server.listen(PORT ,'0.0.0.0' , () => console.log('✅ Server running on port 5000'))
     })
     .catch(err => console.log('❌ DB connection error:', err.message))
