@@ -404,8 +404,8 @@ exports.parent_Login = async (req, res) => {
     try {
         const { email, password } = req.body
         const bcrypt = require('bcrypt')
-        const Parent = require('../models/Parent')
-        const Student = require('../models/student')
+        //const Parent = require('../models/')
+        // const Student = require('../models/')
 
         const parent = await Parent.findOne({ email })
         if (!parent) return res.status(404).json({ error: 'Parent not found' })
