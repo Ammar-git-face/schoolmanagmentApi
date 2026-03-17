@@ -193,7 +193,7 @@ io.on('connection', (socket) => {
 })
 
 // ── DB + Start ────────────────────────────────────
-const dburl = process.env.MONGO_URI || "mongodb+srv://amarhussaini72_db_user:SchoolApp2026@cluster0.bbgseb1.mongodb.net/schoolDb?retryWrites=true&w=majority&appName=Cluster0"
+const dburl = process.env.MONGO_URI || "mongodb://localhost:27017/schoolDb"
 
 // mongoose.connect(dburl)
 //     .then(() => server.listen(5000, () => console.log('✅ Server running on port 5000')))
