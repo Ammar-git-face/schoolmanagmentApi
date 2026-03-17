@@ -81,6 +81,7 @@ app.post('/payroll/owner-register', ownerRegister)
 
 // ── Protected routes (attachSchool required) ─────
 app.use('/student', attachSchool, studentRoute)
+//app.use('/subject' , attachSchool , subjectRoutes)
 app.use('/teacher', attachSchool, teacherRoutes)
 app.use('/class', attachSchool, classRoute)
 app.use('/stats', attachSchool, dashrouter)

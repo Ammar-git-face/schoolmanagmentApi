@@ -97,6 +97,7 @@
 // }
 
 const bcrypt = require('bcrypt')
+const Owner = require('../models/Owner')
 const jwt = require('jsonwebtoken')
 const Admin = require('../models/admin')
 const Teacher = require('../models/Teachers')
@@ -372,28 +373,40 @@ exports.parent_generate_code = async (req, res) => {
 
 exports.parent_register = async (req, res) => {
     try {
-        const { fullname, email, password, familyCode } = req.body
+        const { fullname, email, password, familyCode, schoolCode } = req.body
         console.log("Family code received:", familyCode)
+        console.log("School code received:", schoolCode)
 
-        const students = await Student.find({ familyCode })
+        if (!schoolCode) return res.status(400).json({ error: 'School code is required' })
+
+        // Validate school exists and is active
+        const school = await Owner.findOne({ schoolCode: schoolCode.toUpperCase() }).lean()
+        if (!school) return res.status(400).json({ error: 'Invalid school code — check with your school admin' })
+        if (school.isActive === false) return res.status(403).json({ error: 'School account is deactivated' })
+
+        // Validate family code belongs to a student in THIS school
+        const students = await Student.find({ familyCode, schoolCode: schoolCode.toUpperCase() })
         console.log("Students found:", students.length)
-        if (students.length === 0) return res.status(400).json({ error: 'Invalid family code' })
+        if (students.length === 0) return res.status(400).json({ error: 'Invalid family code for this school' })
 
         const exists = await Parent.findOne({ email })
         if (exists) return res.status(400).json({ error: 'Email already registered' })
 
-        // const parent = await Parent.create({ fullname, email, password, familyCode })
-        const schoolCode = students[0].schoolCode
-        if (!schoolCode) return res.status(400).json({ error: 'Student missing schoolCode. Contact admin.' })
-        const parent = await Parent.create({ fullname, email, password, familyCode, schoolCode })
+        // schoolCode saved on parent record — never needed again at login
+        const parent = await Parent.create({
+            fullname, email, password,
+            familyCode,
+            schoolCode: schoolCode.toUpperCase()
+        })
 
-        await Student.updateMany(
-            { familyCode },
-            { parentId: parent._id }
+        await Student.updateMany({ familyCode }, { parentId: parent._id })
+
+        const token = jwt.sign(
+            { id: parent._id, role: 'parent', schoolCode: parent.schoolCode },
+            process.env.JWT_SECRET || 'mySuperSecretKey123',
+            { expiresIn: '7d' }
         )
-
-        const token = createToken(parent._id, 'parent')
-        res.cookie('token', token, { httpOnly: true, maxAge: 24 * 60 * 60 * 1000 })
+        res.cookie('token', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'lax' })
         res.json({ token, role: 'parent', id: parent._id, name: parent.fullname })
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -403,21 +416,16 @@ exports.parent_register = async (req, res) => {
 exports.parent_Login = async (req, res) => {
     try {
         const { email, password } = req.body
-        const bcrypt = require('bcrypt')
-        //const Parent = require('../models/')
-        // const Student = require('../models/')
 
         const parent = await Parent.findOne({ email })
         if (!parent) return res.status(404).json({ error: 'Parent not found' })
 
-        // ✅ Handle both plain-text (old) and hashed (new) passwords
-        //    Old accounts stored plain text — migrate them on first login
+        // Handle both plain-text (old) and hashed (new) passwords
         let isMatch = false
         const isHashed = parent.password?.startsWith('$2b$') || parent.password?.startsWith('$2a$')
         if (isHashed) {
             isMatch = await bcrypt.compare(password, parent.password)
         } else {
-            // Plain text password from before the fix — compare directly then re-hash
             isMatch = (password === parent.password)
             if (isMatch) {
                 parent.password = password  // pre-save hook will hash it
@@ -426,9 +434,12 @@ exports.parent_Login = async (req, res) => {
         }
         if (!isMatch) return res.status(400).json({ error: 'Invalid credentials' })
 
-        // ✅ fetch children so frontend can save them to localStorage
+        // schoolCode was saved at registration — read from DB, no need for parent to re-enter
+        if (!parent.schoolCode) return res.status(400).json({ error: 'Account missing school info. Contact your school admin.' })
+
         const children = await Student.find({ parentId: parent._id }, '_id fullname studentClass').lean()
 
+        // FIX: include schoolCode in token so attachSchool middleware passes
         const token = jwt.sign(
             { id: parent._id, role: 'parent', schoolCode: parent.schoolCode },
             process.env.JWT_SECRET || 'mySuperSecretKey123',
@@ -437,9 +448,9 @@ exports.parent_Login = async (req, res) => {
         res.cookie('token', token, { httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000, sameSite: 'lax' })
         res.json({
             token,
-            _id: parent._id,
-            fullname: parent.fullname || parent.name || "",
-            email: parent.email,
+            _id:        parent._id,
+            fullname:   parent.fullname || parent.name || "",
+            email:      parent.email,
             schoolCode: parent.schoolCode,
             children,
             role: 'parent'

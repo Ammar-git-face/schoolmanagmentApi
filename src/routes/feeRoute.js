@@ -3,6 +3,7 @@ const feeRouter = express.Router()
 const feeController = require('../controllers/feeController')
 
 feeRouter.post('/create', feeController.create_fee)
+// feeRouter.post('/student', feeController.)
 feeRouter.post('/initialize', feeController.initialize_payment)
 feeRouter.post('/verify', feeController.verify_payment)
 feeRouter.get('/parent/:parentId', feeController.get_fees_by_parent)
