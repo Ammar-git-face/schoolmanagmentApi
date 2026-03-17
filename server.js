@@ -38,8 +38,7 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization'],
 }))
 
-// ✅ Handle preflight requests explicitly
-app.options('*', cors())
+
 
 const fs = require('fs')
 if (fs.existsSync('.env')) require('dotenv').config()
