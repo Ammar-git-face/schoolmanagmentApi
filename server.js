@@ -19,14 +19,27 @@ const app = express()
 app.use(express.urlencoded({ extended: true }))
 app.use(express.json())
 app.use(cookieParser())
+const allowedOrigins = [
+    'http://localhost:3000',
+    'https://your-frontend.vercel.app'  // add this when you deploy frontend
+]
+
 app.use(cors({
-    origin: [
-        'http://localhost:3000',
-        'capacitor://localhost',
-        'http://localhost',
-        'https://your-vercel-or-netlify-url.app'
-    ]
+    origin: (origin, callback) => {
+        // allow requests with no origin (Postman, mobile apps)
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true)
+        } else {
+            callback(new Error('Not allowed by CORS'))
+        }
+    },
+    credentials: true,  // ← this is what sets Access-Control-Allow-Credentials: true
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }))
+
+// ✅ Handle preflight requests explicitly
+app.options('*', cors())
 
 const fs = require('fs')
 if (fs.existsSync('.env')) require('dotenv').config()
@@ -202,6 +215,6 @@ const PORT = process.env.PORT || 5000
 mongoose.connect(dburl)
     .then(() => {
         console.log('✅ MongoDB connected to:', dburl.substring(0, 40))
-        server.listen(PORT ,'0.0.0.0' , () => console.log('✅ Server running on port 5000'))
+        server.listen(PORT, '0.0.0.0', () => console.log('✅ Server running on port 5000'))
     })
     .catch(err => console.log('❌ DB connection error:', err.message))
