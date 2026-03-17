@@ -12,9 +12,8 @@ const parentSchema = new mongoose.Schema({
 
 // ✅ pre-save hook was missing — passwords were stored as plain text
 parentSchema.pre('save', async function (next) {
-    if (!this.isModified('password')) return next()
+    if (!this.password || !this.isModified('password')) return
     this.password = await bcrypt.hash(this.password, 10)
-
 })
 
 module.exports = mongoose.models.Parent || mongoose.model('Parent', parentSchema)
