@@ -181,8 +181,8 @@ exports.getOwnerStats = async (req, res) => {
     try {
         const Student = require('../models/student')
         const Teacher = require('../models/Teachers')
-        const Parent = require('../models/Parent')
-        const Fee = require('../models/Fee')
+        const Parent = require('../models/parent')
+        const Fee = require('../models/fee')
         const Attendance = require('../models/Attendance')
 
         const currentYear = new Date().getFullYear().toString()
@@ -317,7 +317,7 @@ exports.ownerRegister = async (req, res) => {
     try {
         const bcrypt      = require('bcrypt')
         const Owner       = require('../models/Owner')
-        const Admin       = require('../models/Admin')
+     //   const Admin       = require('../models/admin')
         const { fullname, email, password, phone, schoolName, schoolAddress, plan } = req.body
 
         if (!fullname || !email || !password || !schoolName)
