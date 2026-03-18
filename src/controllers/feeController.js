@@ -216,9 +216,7 @@ exports.save_bank_details = async (req, res) => {
         const owner = await Owner.findOne({ schoolCode })
         if (!owner) return res.status(404).json({ error: "School not found" })
 
-        // Create a Flutterwave subaccount for this school
-        // schoolCode used in meta as unique identifier — no conflict between schools
-        // school gets 98% of every payment, platform keeps 2%
+        // Go straight to subaccount creation — Flutterwave verifies account internally
         const flwResponse = await axios.post(
             "https://api.flutterwave.com/v3/subaccounts",
             {
@@ -227,8 +225,8 @@ exports.save_bank_details = async (req, res) => {
                 business_name:           owner.schoolName,
                 business_email:          owner.email,
                 business_contact:        owner.fullname,
-                business_contact_mobile: owner.phone || "",
-                business_mobile:         owner.phone || "",
+                business_contact_mobile: owner.phone || "08000000000",
+                business_mobile:         owner.phone || "08000000000",
                 country:                 "NG",
                 split_type:              "percentage",
                 split_value:             0.98,
@@ -237,33 +235,34 @@ exports.save_bank_details = async (req, res) => {
             { headers: { Authorization: `Bearer ${FLW_SECRET}` } }
         )
 
+        console.log("FLW subaccount response:", JSON.stringify(flwResponse.data, null, 2))
+
         if (flwResponse.data.status !== "success")
             return res.status(400).json({
-                error: "Flutterwave subaccount creation failed",
-                details: flwResponse.data.message
+                error: flwResponse.data.message || "Payment account setup failed"
             })
 
-        const subaccountId = flwResponse.data.data.subaccount_id
+        const subaccountId   = flwResponse.data.data.subaccount_id
+        const verifiedName   = flwResponse.data.data.account_name || accountName
 
-        // Save bank details + subaccountId on the Owner record
         await Owner.findOneAndUpdate(
             { schoolCode },
             {
-                bankDetails: { accountNumber, bankCode, bankName, accountName },
+                bankDetails: { accountNumber, bankCode, bankName, accountName: verifiedName },
                 flutterwaveSubaccountId: subaccountId
             }
         )
 
         res.json({
-            message: "Bank details saved and payment account created successfully",
+            message:    "Bank details saved and payment account created successfully",
+            accountName: verifiedName,
             subaccountId
         })
     } catch (err) {
-        console.log("Save bank details error:", err.response?.data || err.message)
+        console.log("Save bank details error:", JSON.stringify(err.response?.data, null, 2))
         res.status(500).json({ error: err.response?.data?.message || err.message })
     }
 }
-
 // ── Get saved bank details for settings page ─────────────────────────────────
 exports.get_bank_details = async (req, res) => {
     try {
