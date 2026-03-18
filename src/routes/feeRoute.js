@@ -11,4 +11,8 @@ feeRouter.get('/all', feeController.get_all_fees)
 feeRouter.post('/pay-salary', feeController.pay_teacher_salary)
 feeRouter.get('/banks', feeController.get_banks)
 
+// newly added
+feeRouter.post('/save-bank-details', feeController.save_bank_details)
+feeRouter.get('/bank-details',       feeController.get_bank_details)
+
 module.exports = feeRouter
