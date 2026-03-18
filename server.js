@@ -21,7 +21,7 @@ app.use(cookieParser())
 
 const allowedOrigins = [
     'http://localhost:3000',
-    'https://your-frontend.vercel.app'
+    'https://edvance-plum.vercel.app'
 ]
 
 app.use(cors({
