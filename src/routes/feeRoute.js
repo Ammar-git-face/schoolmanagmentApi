@@ -14,5 +14,6 @@ feeRouter.get('/banks', feeController.get_banks)
 // newly added
 feeRouter.post('/save-bank-details', feeController.save_bank_details)
 feeRouter.get('/bank-details',       feeController.get_bank_details)
+feeRouter.post('/resolve-account', feeController.resolve_account)
 
 module.exports = feeRouter

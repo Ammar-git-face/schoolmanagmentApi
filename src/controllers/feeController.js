@@ -263,6 +263,24 @@ exports.save_bank_details = async (req, res) => {
         res.status(500).json({ error: err.response?.data?.message || err.message })
     }
 }
+
+exports.resolve_account = async (req, res) => {
+    try {
+        const { accountNumber, bankCode } = req.body
+        const response = await axios.get(
+            `https://api.flutterwave.com/v3/accounts/resolve`,
+            {
+                params:  { account_number: accountNumber, account_bank: bankCode },
+                headers: { Authorization: `Bearer ${FLW_SECRET}` }
+            }
+        )
+        if (response.data.status !== "success")
+            return res.status(400).json({ error: "Could not verify account" })
+        res.json({ accountName: response.data.data.account_name })
+    } catch (err) {
+        res.status(500).json({ error: err.response?.data?.message || err.message })
+    }
+}
 // ── Get saved bank details for settings page ─────────────────────────────────
 exports.get_bank_details = async (req, res) => {
     try {
