@@ -804,18 +804,23 @@ exports.ownerRegister = async (req, res) => {
         const exists = await Owner.findOne({ email })
         if (exists) return res.status(400).json({ error: 'Email already registered' })
 
+        let schoolCode = generateCode()
+        // Ensure uniqueness — retry if clash (extremely rare)
+        while (await Owner.findOne({ schoolCode })) schoolCode = generateCode()
+
         const hashed = await bcrypt.hash(password, 10)
 
         const owner = await Owner.create({
             fullname,
             email,
-            password: hashed,
+            password: hashedOwner,
             phone: phone || '',
             schoolName,
-            schoolCode,   
             schoolAddress: schoolAddress || '',
+            schoolCode,
             plan: plan || 'free',
-            role: 'owner'
+            role: 'owner',
+            isActive: true
         })
 
         // ── Send credentials to owner ────────────────────────────────────────
