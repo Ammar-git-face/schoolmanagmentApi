@@ -791,37 +791,42 @@ exports.ownerLogin = async (req, res) => {
 
 // ============ OWNER REGISTER ============
 exports.ownerRegister = async (req, res) => {
-    try {
-        const bcrypt = require('bcrypt')
-        const Owner = require('../models/Owner')
-
-        const { fullname, email, password, phone, schoolName, schoolAddress, plan } = req.body
-
-        if (!fullname || !email || !password || !schoolName) {
-            return res.status(400).json({ error: 'fullname, email, password and schoolName are required' })
-        }
-
-        const exists = await Owner.findOne({ email })
-        if (exists) return res.status(400).json({ error: 'Email already registered' })
-
-        let schoolCode = generateCode()
-        // Ensure uniqueness — retry if clash (extremely rare)
-        while (await Owner.findOne({ schoolCode })) schoolCode = generateCode()
-
-        const hashed = await bcrypt.hash(password, 10)
-
-        const owner = await Owner.create({
-            fullname,
-            email,
-            password: hashedOwner,
-            phone: phone || '',
-            schoolName,
-            schoolAddress: schoolAddress || '',
-            schoolCode,
-            plan: plan || 'free',
-            role: 'owner',
-            isActive: true
-        })
+        try {
+            const bcrypt      = require('bcrypt')
+            const Owner       = require('../models/Owner')
+         //   const Admin       = require('../models/admin')
+            const { fullname, email, password, phone, schoolName, schoolAddress, plan } = req.body
+    
+            if (!fullname || !email || !password || !schoolName)
+                return res.status(400).json({ error: 'fullname, email, password and schoolName are required' })
+    
+            // ── Check duplicate ─────────────────────────────────────────────────
+            const exists = await Owner.findOne({ email })
+            if (exists) return res.status(400).json({ error: 'Email already registered' })
+    
+            // ── Generate unique schoolCode ──────────────────────────────────────
+            // 8-char uppercase alphanumeric — unique enough for school codes
+            const generateCode = () =>
+                Math.random().toString(36).substring(2, 10).toUpperCase()
+    
+            let schoolCode = generateCode()
+            // Ensure uniqueness — retry if clash (extremely rare)
+            while (await Owner.findOne({ schoolCode })) schoolCode = generateCode()
+    
+            // ── Create Owner record ─────────────────────────────────────────────
+            const hashedOwner = await bcrypt.hash(password, 10)
+            const owner = await Owner.create({
+                fullname,
+                email,
+                password: hashedOwner,
+                phone:          phone          || '',
+                schoolName,
+                schoolAddress:  schoolAddress  || '',
+                schoolCode,
+                plan:           plan           || 'free',
+                role:           'owner',
+                isActive:       true
+            })
 
         // ── Send credentials to owner ────────────────────────────────────────
         const sendEmails = async () => {
