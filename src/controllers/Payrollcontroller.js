@@ -812,6 +812,7 @@ exports.ownerRegister = async (req, res) => {
             password: hashed,
             phone: phone || '',
             schoolName,
+            schoolCode,   
             schoolAddress: schoolAddress || '',
             plan: plan || 'free',
             role: 'owner'
