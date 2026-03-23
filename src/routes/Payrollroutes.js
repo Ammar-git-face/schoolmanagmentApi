@@ -8,6 +8,7 @@ const {
     markAsPaid,
     getOwnerStats,
     ownerLogin,
+    testEmail,
     ownerRegister
 } = require('../controllers/Payrollcontroller')
 
@@ -19,5 +20,6 @@ rollrouter.put('/mark-paid/:id', markAsPaid)
 rollrouter.get('/owner-stats', getOwnerStats)
 rollrouter.post('/owner-login', ownerLogin)
 rollrouter.post('/owner-register', ownerRegister)
+// rollrouter.post('/test' ,testEmail )
 
 module.exports = rollrouter
