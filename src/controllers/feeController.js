@@ -130,7 +130,7 @@
 //         res.status(500).json({ error: err.message })
 //     }
 // }
-const Fee   = require('../models/fee')
+const Fee = require('../models/fee')
 const Owner = require('../models/Owner')
 const axios = require('axios')
 
@@ -195,7 +195,8 @@ exports.get_fees_by_parent = async (req, res) => {
 // ── Get all fees (admin) ─────────────────────────────────────────────────────
 exports.get_all_fees = async (req, res) => {
     try {
-        const fees = await Fee.find().sort({ createdAt: -1 })
+        // const fees = await Fee.find().sort({ createdAt: -1 })
+        const fees = await Fee.find({ schoolCode: req.schoolCode }).sort({ createdAt: -1 })
         res.json(fees)
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -220,16 +221,16 @@ exports.save_bank_details = async (req, res) => {
         const flwResponse = await axios.post(
             "https://api.flutterwave.com/v3/subaccounts",
             {
-                account_bank:            bankCode,
-                account_number:          accountNumber,
-                business_name:           owner.schoolName,
-                business_email:          owner.email,
-                business_contact:        owner.fullname,
+                account_bank: bankCode,
+                account_number: accountNumber,
+                business_name: owner.schoolName,
+                business_email: owner.email,
+                business_contact: owner.fullname,
                 business_contact_mobile: owner.phone || "08000000000",
-                business_mobile:         owner.phone || "08000000000",
-                country:                 "NG",
-                split_type:              "percentage",
-                split_value:             0.98,
+                business_mobile: owner.phone || "08000000000",
+                country: "NG",
+                split_type: "percentage",
+                split_value: 0.98,
                 meta: [{ meta_name: "schoolCode", meta_value: schoolCode }]
             },
             { headers: { Authorization: `Bearer ${FLW_SECRET}` } }
@@ -242,8 +243,8 @@ exports.save_bank_details = async (req, res) => {
                 error: flwResponse.data.message || "Payment account setup failed"
             })
 
-        const subaccountId   = flwResponse.data.data.subaccount_id
-        const verifiedName   = flwResponse.data.data.account_name || accountName
+        const subaccountId = flwResponse.data.data.subaccount_id
+        const verifiedName = flwResponse.data.data.account_name || accountName
 
         await Owner.findOneAndUpdate(
             { schoolCode },
@@ -254,7 +255,7 @@ exports.save_bank_details = async (req, res) => {
         )
 
         res.json({
-            message:    "Bank details saved and payment account created successfully",
+            message: "Bank details saved and payment account created successfully",
             accountName: verifiedName,
             subaccountId
         })
@@ -270,7 +271,7 @@ exports.resolve_account = async (req, res) => {
         const response = await axios.get(
             `https://api.flutterwave.com/v3/accounts/resolve`,
             {
-                params:  { account_number: accountNumber, account_bank: bankCode },
+                params: { account_number: accountNumber, account_bank: bankCode },
                 headers: { Authorization: `Bearer ${FLW_SECRET}` }
             }
         )
@@ -290,9 +291,9 @@ exports.get_bank_details = async (req, res) => {
         ).lean()
         if (!owner) return res.status(404).json({ error: "School not found" })
         res.json({
-            bankDetails:             owner.bankDetails || {},
+            bankDetails: owner.bankDetails || {},
             flutterwaveSubaccountId: owner.flutterwaveSubaccountId || "",
-            isConfigured:            !!owner.flutterwaveSubaccountId
+            isConfigured: !!owner.flutterwaveSubaccountId
         })
     } catch (err) {
         res.status(500).json({ error: err.message })
@@ -318,13 +319,13 @@ exports.pay_teacher_salary = async (req, res) => {
         const response = await axios.post(
             "https://api.flutterwave.com/v3/transfers",
             {
-                account_bank:     bankCode,
-                account_number:   accountNumber,
-                amount:           amount,
-                narration:        narration || `Salary payment for ${teacherName}`,
-                currency:         "NGN",
-                reference:        `SAL-${teacherId}-${Date.now()}`,
-                debit_currency:   "NGN",
+                account_bank: bankCode,
+                account_number: accountNumber,
+                amount: amount,
+                narration: narration || `Salary payment for ${teacherName}`,
+                currency: "NGN",
+                reference: `SAL-${teacherId}-${Date.now()}`,
+                debit_currency: "NGN",
                 debit_subaccount: owner.flutterwaveSubaccountId
             },
             { headers: { Authorization: `Bearer ${FLW_SECRET}` } }
@@ -335,8 +336,8 @@ exports.pay_teacher_salary = async (req, res) => {
         if (response.data.status === "success") {
             const Teacher = require('../models/Teachers')
             await Teacher.findByIdAndUpdate(teacherId, {
-                paid:           "paid",
-                lastPaidAt:     new Date(),
+                paid: "paid",
+                lastPaidAt: new Date(),
                 lastPaidAmount: amount
             })
             return res.json({ message: "Salary transfer initiated successfully" })
