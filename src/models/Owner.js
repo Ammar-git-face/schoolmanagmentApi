@@ -43,6 +43,21 @@ const ownerSchema = new mongoose.Schema({
     // Returned by Flutterwave after subaccount creation — used in all payments
     flutterwaveSubaccountId: { type: String, default: "" },
 
+    
+
+    plan:         { type: String, enum: ['free', 'trial', 'premium'], default: 'trial' },
+    trialStartDate: { type: Date, default: Date.now },
+    trialEndDate:   { type: Date },   // set on register to +90 days
+    planExpiry:     { type: Date },   // for premium subscriptions
+ 
+    isActive: { type: Boolean, default: true }
 }, { timestamps: true })
+ 
+// Virtual — check if trial is still valid
+ownerSchema.virtual('isTrialActive').get(function () {
+    if (this.plan !== 'trial') return false
+    if (!this.trialEndDate) return true
+    return new Date() < this.trialEndDate
+})  
 
 module.exports = mongoose.models.Owner || mongoose.model('Owner', ownerSchema)

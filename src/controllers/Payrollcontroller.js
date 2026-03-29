@@ -415,7 +415,7 @@
 //                                         auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
 //                                         tls: { rejectUnauthorized: false, ciphers: 'SSLv3' }
 //                                     })
-                    
+
 //                                     // Email to owner
 //                                     await transporter.sendMail({
 //                                         from: `"Edvance Platform" <${process.env.EMAIL_USER}>`,
@@ -436,7 +436,7 @@
 //                                                 </p>
 //                                             </div>`
 //                                     })
-                    
+
 //                                     // Email to super admin
 //                                     await transporter.sendMail({
 //                                         from: `"Edvance Platform" <${process.env.EMAIL_USER}>`,
@@ -459,7 +459,7 @@
 //                                 }
 //                             }
 //                             sendEmails()
-                    
+
 //                             res.status(201).json({
 //                                 message: 'Owner account created successfully',
 //                                 owner: {
@@ -530,21 +530,21 @@
 // }
 
 
-const Payroll    = require('../models/Payroll')
-const Teacher    = require('../models/Teachers')
-const axios      = require('axios')
+const Payroll = require('../models/Payroll')
+const Teacher = require('../models/Teachers')
+const axios = require('axios')
 const nodemailer = require('nodemailer')
-const School     = require('../models/school')
-const Admin      = require('../models/admin')
+const School = require('../models/school')
+const Admin = require('../models/admin')
 
 // Generate payroll for all teachers for a given month/year
 exports.generatePayroll = async (req, res) => {
     try {
-        const month  = req.body.month
-        const year   = req.body.year
+        const month = req.body.month
+        const year = req.body.year
         const paidBy = req.body.paidBy || 'Admin'
         // FIX: scope to this school only
-        const sc     = req.schoolCode
+        const sc = req.schoolCode
 
         if (!month || !year) return res.status(400).json({ error: 'Month and year are required' })
 
@@ -559,19 +559,19 @@ exports.generatePayroll = async (req, res) => {
             const existing = await Payroll.findOne({ teacherId: teacher._id, month, year, schoolCode: sc })
             if (existing) { skipped.push(teacher.fullname); continue }
 
-            const basicSalary       = teacher.salary || 0
+            const basicSalary = teacher.salary || 0
             const defaultAllowances = [
                 { name: 'Transport', amount: 0 },
-                { name: 'Housing',   amount: 0 }
+                { name: 'Housing', amount: 0 }
             ]
             const defaultDeductions = [
                 { name: 'Tax (PAYE)', amount: Math.round(basicSalary * 0.05) },
-                { name: 'Pension',    amount: Math.round(basicSalary * 0.08) }
+                { name: 'Pension', amount: Math.round(basicSalary * 0.08) }
             ]
             const totalAllowances = defaultAllowances.reduce((s, a) => s + a.amount, 0)
             const totalDeductions = defaultDeductions.reduce((s, d) => s + d.amount, 0)
-            const grossPay        = basicSalary + totalAllowances
-            const netPay          = grossPay - totalDeductions
+            const grossPay = basicSalary + totalAllowances
+            const netPay = grossPay - totalDeductions
 
             const payroll = await Payroll.create({
                 teacherId: teacher._id,
@@ -605,21 +605,21 @@ exports.generatePayroll = async (req, res) => {
 // Get all payroll records with optional filters
 exports.getPayroll = async (req, res) => {
     try {
-        const month  = req.query.month
-        const year   = req.query.year
+        const month = req.query.month
+        const year = req.query.year
         const status = req.query.status
         // FIX: always scope to this school
-        const query  = { schoolCode: req.schoolCode }
+        const query = { schoolCode: req.schoolCode }
 
-        if (month)  query.month  = month
-        if (year)   query.year   = year
+        if (month) query.month = month
+        if (year) query.year = year
         if (status) query.status = status
 
         const records = await Payroll.find(query).sort({ createdAt: -1 }).lean()
 
-        const totalGross   = records.reduce((s, r) => s + r.grossPay, 0)
-        const totalNet     = records.reduce((s, r) => s + r.netPay, 0)
-        const totalPaid    = records.filter(r => r.status === 'paid').reduce((s, r) => s + r.netPay, 0)
+        const totalGross = records.reduce((s, r) => s + r.grossPay, 0)
+        const totalNet = records.reduce((s, r) => s + r.netPay, 0)
+        const totalPaid = records.filter(r => r.status === 'paid').reduce((s, r) => s + r.netPay, 0)
         const totalPending = records.filter(r => r.status === 'pending').reduce((s, r) => s + r.netPay, 0)
 
         res.json({ records, summary: { totalGross, totalNet, totalPaid, totalPending, count: records.length } })
@@ -631,7 +631,7 @@ exports.getPayroll = async (req, res) => {
 // Update a single payroll record (add allowances/deductions)
 exports.updatePayroll = async (req, res) => {
     try {
-        const { id }                      = req.params
+        const { id } = req.params
         const { allowances, deductions, note } = req.body
 
         const payroll = await Payroll.findOne({ _id: id, schoolCode: req.schoolCode })
@@ -644,8 +644,8 @@ exports.updatePayroll = async (req, res) => {
 
         payroll.totalAllowances = payroll.allowances.reduce((s, a) => s + (a.amount || 0), 0)
         payroll.totalDeductions = payroll.deductions.reduce((s, d) => s + (d.amount || 0), 0)
-        payroll.grossPay        = payroll.basicSalary + payroll.totalAllowances
-        payroll.netPay          = payroll.grossPay - payroll.totalDeductions
+        payroll.grossPay = payroll.basicSalary + payroll.totalAllowances
+        payroll.netPay = payroll.grossPay - payroll.totalDeductions
 
         await payroll.save()
         res.json(payroll)
@@ -672,20 +672,20 @@ exports.payTeacher = async (req, res) => {
         const response = await axios.post(
             'https://api.flutterwave.com/v3/transfers',
             {
-                account_bank:   teacher.bankCode,
+                account_bank: teacher.bankCode,
                 account_number: teacher.accountNumber,
-                amount:         payroll.netPay,
-                currency:       'NGN',
-                reference:      txRef,
-                narration:      `${payroll.month} ${payroll.year} Salary - ${teacher.fullname}`,
-                callback_url:   `${process.env.BACKEND_URL}/payroll/verify/${payroll._id}`
+                amount: payroll.netPay,
+                currency: 'NGN',
+                reference: txRef,
+                narration: `${payroll.month} ${payroll.year} Salary - ${teacher.fullname}`,
+                callback_url: `${process.env.BACKEND_URL}/payroll/verify/${payroll._id}`
             },
             { headers: { Authorization: `Bearer ${process.env.FLW_SECRET_KEY}` } }
         )
 
         if (response.data.status === 'success') {
             payroll.status = 'paid'
-            payroll.txRef  = txRef
+            payroll.txRef = txRef
             payroll.flwRef = response.data.data?.id?.toString()
             payroll.paidAt = new Date()
             await payroll.save()
@@ -702,15 +702,15 @@ exports.payTeacher = async (req, res) => {
 // Mark as paid manually (cash payment)
 exports.markAsPaid = async (req, res) => {
     try {
-        const { id }  = req.params
+        const { id } = req.params
         // FIX: scope to this school
         const payroll = await Payroll.findOne({ _id: id, schoolCode: req.schoolCode })
         if (!payroll) return res.status(404).json({ error: 'Payroll not found' })
         if (payroll.status === 'paid') return res.status(400).json({ error: 'Already paid' })
 
-        payroll.status        = 'paid'
+        payroll.status = 'paid'
         payroll.paymentMethod = 'cash'
-        payroll.paidAt        = new Date()
+        payroll.paidAt = new Date()
         await payroll.save()
         res.json({ message: 'Marked as paid', payroll })
     } catch (err) {
@@ -721,36 +721,36 @@ exports.markAsPaid = async (req, res) => {
 // Owner dashboard stats
 exports.getOwnerStats = async (req, res) => {
     try {
-        const Student    = require('../models/student')
-        const Teacher    = require('../models/Teachers')
-        const Parent     = require('../models/parent')
-        const Fee        = require('../models/fee')
+        const Student = require('../models/student')
+        const Teacher = require('../models/Teachers')
+        const Parent = require('../models/parent')
+        const Fee = require('../models/fee')
         const Attendance = require('../models/Attendance')
 
         // FIX: scope ALL queries to this school — was fetching all schools' data
         const sc = req.schoolCode
         if (!sc) return res.status(400).json({ error: 'No school code on request' })
 
-        const currentYear  = new Date().getFullYear().toString()
+        const currentYear = new Date().getFullYear().toString()
         const currentMonth = new Date().toLocaleString('en-NG', { month: 'long' })
 
         const [totalStudents, totalTeachers, totalParents] = await Promise.all([
             Student.countDocuments({ schoolCode: sc }),
             Teacher.countDocuments({ schoolCode: sc }),
-            Parent.countDocuments({  schoolCode: sc }),
+            Parent.countDocuments({ schoolCode: sc }),
         ])
 
         // FIX: filter fees by schoolCode
-        const allFees            = await Fee.find({ schoolCode: sc }).lean()
+        const allFees = await Fee.find({ schoolCode: sc }).lean()
         const totalFeesCollected = allFees.filter(f => f.status === 'paid').reduce((s, f) => s + f.amount, 0)
-        const totalFeesPending   = allFees.filter(f => f.status === 'pending').reduce((s, f) => s + f.amount, 0)
-        const feeCollectionRate  = allFees.length > 0
+        const totalFeesPending = allFees.filter(f => f.status === 'pending').reduce((s, f) => s + f.amount, 0)
+        const feeCollectionRate = allFees.length > 0
             ? Math.round(allFees.filter(f => f.status === 'paid').length / allFees.length * 100)
             : 0
 
         // FIX: filter payroll by schoolCode
-        const payrollRecords    = await Payroll.find({ month: currentMonth, year: currentYear, schoolCode: sc }).lean()
-        const totalPayrollPaid  = payrollRecords.filter(p => p.status === 'paid').reduce((s, p) => s + p.netPay, 0)
+        const payrollRecords = await Payroll.find({ month: currentMonth, year: currentYear, schoolCode: sc }).lean()
+        const totalPayrollPaid = payrollRecords.filter(p => p.status === 'paid').reduce((s, p) => s + p.netPay, 0)
         const totalPayrollPending = payrollRecords.filter(p => p.status === 'pending').reduce((s, p) => s + p.netPay, 0)
 
         // Monthly fee collection for last 6 months — scoped to this school
@@ -760,17 +760,17 @@ exports.getOwnerStats = async (req, res) => {
             d.setDate(1)
             d.setMonth(d.getMonth() - i)
             months.push({
-                month:      d.toLocaleString('en-NG', { month: 'short' }),
-                year:       d.getFullYear(),
+                month: d.toLocaleString('en-NG', { month: 'short' }),
+                year: d.getFullYear(),
                 monthIndex: d.getMonth()
             })
         }
 
         const monthlyRevenue = await Promise.all(months.map(async ({ month, year, monthIndex }) => {
             const start = new Date(year, monthIndex, 1)
-            const end   = new Date(year, monthIndex + 1, 1)
+            const end = new Date(year, monthIndex + 1, 1)
             // FIX: include schoolCode filter
-            const fees  = await Fee.find({
+            const fees = await Fee.find({
                 schoolCode: sc,
                 status: 'paid',
                 paidAt: { $gte: start, $lt: end }
@@ -779,9 +779,9 @@ exports.getOwnerStats = async (req, res) => {
         }))
 
         // FIX: filter attendance by schoolCode
-        const attendanceRecords     = await Attendance.find({ schoolCode: sc }).lean()
-        const totalAttendance       = attendanceRecords.length
-        const presentCount          = attendanceRecords.filter(a => a.status === 'present' || a.status === 'late').length
+        const attendanceRecords = await Attendance.find({ schoolCode: sc }).lean()
+        const totalAttendance = attendanceRecords.length
+        const presentCount = attendanceRecords.filter(a => a.status === 'present' || a.status === 'late').length
         const overallAttendanceRate = totalAttendance > 0 ? Math.round(presentCount / totalAttendance * 100) : 0
 
         // FIX: filter recent payments by schoolCode
@@ -808,8 +808,8 @@ exports.getOwnerStats = async (req, res) => {
 exports.ownerLogin = async (req, res) => {
     try {
         const bcrypt = require('bcrypt')
-        const jwt    = require('jsonwebtoken')
-        const Owner  = require('../models/Owner')
+        const jwt = require('jsonwebtoken')
+        const Owner = require('../models/Owner')
 
         const { email, password } = req.body
 
@@ -830,22 +830,22 @@ exports.ownerLogin = async (req, res) => {
 
         res.cookie('token', token, {
             httpOnly: true,
-            maxAge:   7 * 24 * 60 * 60 * 1000,
+            maxAge: 7 * 24 * 60 * 60 * 1000,
             sameSite: 'lax'
         })
 
         res.json({
             token,
             user: {
-                id:           owner._id,
-                fullname:     owner.fullname,
-                email:        owner.email,
-                schoolName:   owner.schoolName,
-                schoolCode:   owner.schoolCode,
+                id: owner._id,
+                fullname: owner.fullname,
+                email: owner.email,
+                schoolName: owner.schoolName,
+                schoolCode: owner.schoolCode,
                 schoolAddress: owner.schoolAddress || '',
-                plan:         owner.plan,
-                role:         'owner',
-                isActive:     owner.isActive
+                plan: owner.plan,
+                role: 'owner',
+                isActive: owner.isActive
             }
         })
     } catch (err) {
@@ -858,7 +858,7 @@ exports.ownerLogin = async (req, res) => {
 exports.ownerRegister = async (req, res) => {
     try {
         const bcrypt = require('bcrypt')
-        const Owner  = require('../models/Owner')
+        const Owner = require('../models/Owner')
         const { fullname, email, password, phone, schoolName, schoolAddress, plan } = req.body
 
         if (!fullname || !email || !password || !schoolName)
@@ -872,26 +872,31 @@ exports.ownerRegister = async (req, res) => {
         while (await Owner.findOne({ schoolCode })) schoolCode = generateCode()
 
         const hashedOwner = await bcrypt.hash(password, 10)
+        const trialEndDate = new Date()
+        trialEndDate.setDate(trialEndDate.getDate() + 90)
+
         const owner = await Owner.create({
             fullname,
             email,
-            password:      hashedOwner,
-            phone:         phone         || '',
+            password: hashedOwner,
+            phone: phone || '',
             schoolName,
             schoolAddress: schoolAddress || '',
             schoolCode,
-            plan:          plan          || 'free',
-            role:          'owner',
-            isActive:      true
+            plan: 'trial',         // ✅ all new schools start on trial
+            trialStartDate: new Date(),
+            trialEndDate,                    // ✅ expires in 90 days
+            role: 'owner',
+            isActive: true
         })
 
         const schoolExists = await School.findOne({ schoolCode })
         if (!schoolExists) {
             await School.create({
-                name:       schoolName,
+                name: schoolName,
                 email,
-                phone:      phone         || '',
-                address:    schoolAddress || '',
+                phone: phone || '',
+                address: schoolAddress || '',
                 schoolCode
             })
         }
@@ -903,7 +908,7 @@ exports.ownerRegister = async (req, res) => {
                     fullname,
                     email,
                     password,
-                    role:      'admin',
+                    role: 'admin',
                     schoolCode
                 })
             } catch (adminErr) {
@@ -916,14 +921,14 @@ exports.ownerRegister = async (req, res) => {
                 const transporter = nodemailer.createTransport({
                     host: 'smtp.gmail.com', port: 587, secure: false,
                     auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-                    tls:  { rejectUnauthorized: false, ciphers: 'SSLv3' }
+                    tls: { rejectUnauthorized: false, ciphers: 'SSLv3' }
                 })
 
                 await transporter.sendMail({
-                    from:    `"Edvance Platform" <${process.env.EMAIL_USER}>`,
-                    to:      email,
+                    from: `"Edvance Platform" <${process.env.EMAIL_USER}>`,
+                    to: email,
                     subject: `Welcome to Edvance — Your School Credentials`,
-                    html:    `
+                    html: `
                         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
                             <h2 style="color:#2563eb;">Welcome, ${fullname}!</h2>
                             <p>Your school <strong>${schoolName}</strong> has been registered on Edvance.</p>
@@ -940,10 +945,10 @@ exports.ownerRegister = async (req, res) => {
                 })
 
                 await transporter.sendMail({
-                    from:    `"Edvance Platform" <${process.env.EMAIL_USER}>`,
-                    to:      process.env.SUPER_ADMIN_EMAIL,
+                    from: `"Edvance Platform" <${process.env.EMAIL_USER}>`,
+                    to: process.env.SUPER_ADMIN_EMAIL,
                     subject: `New School Registered — ${schoolName}`,
-                    html:    `
+                    html: `
                         <div style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto;padding:24px;">
                             <h2 style="color:#2563eb;">New School Registered</h2>
                             <p>School: <strong>${schoolName}</strong></p>
@@ -965,13 +970,13 @@ exports.ownerRegister = async (req, res) => {
             message: 'School registered successfully. Credentials emailed to owner.',
             schoolCode,
             owner: {
-                _id:        owner._id,
-                fullname:   owner.fullname,
-                email:      owner.email,
+                _id: owner._id,
+                fullname: owner.fullname,
+                email: owner.email,
                 schoolName: owner.schoolName,
                 schoolCode,
-                plan:       owner.plan,
-                role:       owner.role
+                plan: owner.plan,
+                role: owner.role
             }
         })
     } catch (err) {
@@ -986,14 +991,14 @@ exports.testEmail = async (req, res) => {
         const transporter = nodemailer.createTransport({
             host: 'smtp.gmail.com', port: 587, secure: false,
             auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-            tls:  { rejectUnauthorized: false, ciphers: 'SSLv3' }
+            tls: { rejectUnauthorized: false, ciphers: 'SSLv3' }
         })
         await transporter.verify()
         await transporter.sendMail({
-            from:    process.env.EMAIL_USER,
-            to:      req.body.to || process.env.EMAIL_USER,
+            from: process.env.EMAIL_USER,
+            to: req.body.to || process.env.EMAIL_USER,
             subject: 'Test Email — School Platform',
-            text:    'If you see this, nodemailer is working correctly.'
+            text: 'If you see this, nodemailer is working correctly.'
         })
         res.json({ message: 'Test email sent successfully to ' + (req.body.to || process.env.EMAIL_USER) })
     } catch (err) {
