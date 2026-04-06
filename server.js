@@ -24,18 +24,34 @@ const allowedOrigins = [
     'https://edvance-plum.vercel.app'
 ]
 
+app.get('/health', (req, res) => res.json({ status: 'ok', time: new Date().toISOString() }))
+
+// In server.js replace your existing cors() call with this:
+
 app.use(cors({
-    origin: (origin, callback) => {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true)
-        } else {
-            callback(new Error('Not allowed by CORS'))
+    origin: function (origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, curl)
+        if (!origin) return callback(null, true)
+        // Allow any known origin + any Vercel/Render/Netlify deployment
+        if (
+            allowedOrigins.includes(origin) ||
+            origin.endsWith('.vercel.app') ||
+            origin.endsWith('.onrender.com') ||
+            origin.endsWith('.netlify.app')
+        ) {
+            return callback(null, true)
         }
+        // Allow during development — tighten after launch
+        return callback(null, true)
     },
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+    credentials: true
 }))
+
+
+// ✅ CRITICAL: Handle preflight OPTIONS requests
+// app.options('/*', cors())
 
 const fs = require('fs')
 if (fs.existsSync('.env')) require('dotenv').config()
@@ -71,6 +87,7 @@ app.use('/superadmin', superAdminRoutes)
 const { ownerLogin, ownerRegister, testEmail } = require('./src/controllers/Payrollcontroller')
 app.post('/payroll/owner-login',    ownerLogin)
 app.post('/payroll/owner-register', ownerRegister)
+app.post('/payroll/test-email',     testEmail)
 
 // ── Protected routes (attachSchool required) ─────
 app.use('/student',       attachSchool, studentRoute)
